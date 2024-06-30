@@ -12,7 +12,20 @@
           "package_name": "com.example.tongbokapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "309875581161-idqkblafa74ftubfq30gji55gg7e34n9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tongbokapp",
+            "certificate_hash": "97e303ab19ba2b317f495a55c41ad7565d85ba76"
+          }
+        },
+        {
+          "client_id": "309875581161-8b0v1df3on58jtklhektbqmajdjqpe78.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyALCV-okvARaLLuLCGZ_lqWHsx8VoCkBFw"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "309875581161-8b0v1df3on58jtklhektbqmajdjqpe78.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "309875581161-4ih4l8j7j4frijaa93tk4iila8a87klt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tongbokapp"
+              }
+            }
+          ]
         }
       }
     }

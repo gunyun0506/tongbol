@@ -1,63 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:intl/intl.dart'; // numberFormat을 위해 추가
-import 'package:tongbokapp/constants.dart';
-import 'package:tongbokapp/item_details_page.dart';
-import 'package:tongbokapp/models/product.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'item_details_page.dart';
+import 'models/product.dart';
 
 class ItemListPage extends StatefulWidget {
-  const ItemListPage({super.key});
+  final String category;
+
+  const ItemListPage({super.key, required this.category});
 
   @override
   State<ItemListPage> createState() => _ItemListPageState();
-}
-
-List<Map<String, dynamic>> dataList = [
-  {
-    "category": "뚝딱뚝닭강정",
-    "imgUrl": "https://i.ibb.co/GkY5xXZ/main-image.jpg",
-  },
-  {
-    "category": "맘마",
-    "imgUrl": "https://i.ibb.co/2KbN5pV/soup.jpg",
-  },
-  {
-    "category": "한식",
-    "imgUrl": "https://i.ibb.co/KXJD0rN/korean-meals.jpg",
-  },
-  {
-    "category": "디저트",
-    "imgUrl": "https://i.ibb.co/9Yn3t0w/tiramisu.jpg",
-  },
-  {
-    "category": "피자",
-    "imgUrl": "https://i.ibb.co/P9nKtt2/pizza.jpg",
-  },
-  {
-    "category": "볶음밥",
-    "imgUrl": "https://i.ibb.co/3svVzM1/shakshuka.jpg",
-  },
-];
-
-Future<List<Product>> productsForCategory(String category) async {
-  // 여기에 실제 데이터 로직을 구현해야 합니다.
-  // 예시로, 뚝딱뚝닭강정 카테고리에 해당하는 제품을 반환하는 부분을 추가합니다.
-  if (category == '뚝딱뚝닭강정') {
-    return [
-      Product(
-          productNo: 1,
-          productName: "노트북(Laptop)",
-          productImageUrl: "https://picsum.photos/id/1/300/300",
-          price: 600000),
-      Product(
-          productNo: 2,
-          productName: "스마트폰(Phone)",
-          productImageUrl: "https://picsum.photos/id/20/300/300",
-          price: 500000),
-    ];
-  }
-  // 다른 카테고리에 대한 로직도 추가할 수 있습니다.
-  return [];
 }
 
 class _ItemListPageState extends State<ItemListPage> {
@@ -66,11 +20,24 @@ class _ItemListPageState extends State<ItemListPage> {
   @override
   void initState() {
     super.initState();
-    // 예시로 뚝딱뚝닭강정 카테고리의 제품을 불러옵니다.
-    productsForCategory('뚝딱뚝닭강정').then((products) {
-      setState(() {
-        productList = products;
-      });
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('products')
+        .where('category', isEqualTo: widget.category)
+        .get();
+
+    setState(() {
+      productList = querySnapshot.docs.map((doc) {
+        return Product(
+          productNo: doc['productNo'],
+          productName: doc['productName'],
+          productImageUrl: doc['productImageUrl'],
+          price: doc['price'].toDouble(),
+        );
+      }).toList();
     });
   }
 
@@ -78,7 +45,7 @@ class _ItemListPageState extends State<ItemListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("제품 리스트"),
+        title: Text(widget.category),
         centerTitle: true,
       ),
       body: GridView.builder(

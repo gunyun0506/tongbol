@@ -1,24 +1,45 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:tongbokapp/item_list_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/widgets.dart';
 import 'package:tongbokapp/meun_detail_page.dart';
 import 'package:tongbokapp/meun_page.dart';
-import 'package:tongbokapp/models/product.dart';
+import 'item_list_page.dart';
 import 'drawer_widget.dart';
+import 'models/product.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
+  void _navigateToRestaurantPage(DocumentSnapshot doc) {}
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      appBar: MyAppBar(),
-      body: HomeBody(),
-      drawer: CustomDrawer(),
+    return Scaffold(
+      appBar: const MyAppBar(),
+      body: StreamBuilder(
+        stream: category.snapshots(),
+        builder: (BuildContext context,
+            AsyncSnapshot<QuerySnapshot> streamSnapshot) {
+          if (streamSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (streamSnapshot.hasError) {
+            return const Center(child: Text('Error loading data'));
+          } else if (!streamSnapshot.hasData ||
+              streamSnapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('No data available'));
+          } else {
+            return HomeBody(categoryCount: streamSnapshot.data!.docs.length);
+          }
+        },
+      ),
+      drawer: const CustomDrawer(),
       backgroundColor: Colors.white,
     );
   }
 }
+
+CollectionReference category =
+    FirebaseFirestore.instance.collection('categorys');
 
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
   const MyAppBar({super.key});
@@ -46,7 +67,9 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
 }
 
 class HomeBody extends StatefulWidget {
-  const HomeBody({super.key});
+  final int categoryCount;
+
+  const HomeBody({super.key, required this.categoryCount});
 
   @override
   _HomeBodyState createState() => _HomeBodyState();
@@ -78,20 +101,28 @@ class _HomeBodyState extends State<HomeBody> {
     super.dispose();
   }
 
-  void _onSearch() {
+  Future<void> _onSearch() async {
     String searchQuery = searchController.text;
     if (searchQuery.isNotEmpty) {
-      Future<List<Product>> products =
-          productsForCategory(searchQuery); // 수정: 해당 검색 기능을 지원하는 함수 사용
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ItemListPage(
-            category: searchQuery,
-            products: products,
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('categorys')
+          .where('category', isEqualTo: searchQuery)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemListPage(category: searchQuery),
           ),
-        ),
-      );
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No products found for the category $searchQuery'),
+          ),
+        );
+      }
     }
   }
 
@@ -145,24 +176,15 @@ class _HomeBodyState extends State<HomeBody> {
     );
   }
 
-  void _navigateToRestaurantPage(Map<String, dynamic> restaurant) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ItemListPage(
-          category: restaurant['name'], // 예시에서는 name을 category로 사용
-          products: productsForCategory(
-              restaurant['name']), // 수정: 해당 식당의 상품 목록을 불러오는 함수 사용
-        ),
-      ),
-    );
+  void _navigateToRestaurantPage(DocumentSnapshot restaurant) {
+    // Navigate to restaurant page using restaurant data
   }
 
   void _navigateToMenuDetailPage() {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const MenuDetailPage(title: '모든 메뉴'),
+        builder: (context) => const MenuDetailPage(title: '모든 점포'),
       ),
     );
   }
@@ -173,9 +195,9 @@ class _HomeBodyState extends State<HomeBody> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 10), // 검색 UI 위 간격 조정
+          const SizedBox(height: 10),
           search(),
-          const SizedBox(height: 35), // 검색 UI와 PageView.builder 사이 간격 조정
+          const SizedBox(height: 35),
           SizedBox(
             height: 180,
             child: PageView.builder(
@@ -275,7 +297,7 @@ class _HomeBodyState extends State<HomeBody> {
               ),
             ),
           ),
-          const SizedBox(height: 40), // 위젯 간격 조정
+          const SizedBox(height: 40),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -289,9 +311,7 @@ class _HomeBodyState extends State<HomeBody> {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    _navigateToMenuDetailPage();
-                  },
+                  onTap: _navigateToMenuDetailPage,
                   child: const Text(
                     '더보기   ',
                     style: TextStyle(
@@ -306,85 +326,77 @@ class _HomeBodyState extends State<HomeBody> {
           ),
           const SizedBox(height: 5),
           Expanded(
-            child: SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: Column(
-                children: List.generate(
-                  restaurantList.length,
-                  (index) {
-                    final restaurant = restaurantList[index];
-                    return GestureDetector(
-                      onTap: () => _navigateToRestaurantPage(restaurant),
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(12),
-                          color: Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.2),
-                              spreadRadius: 2,
-                              blurRadius: 5,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Image.asset(
-                              restaurant['image'],
-                              width: 100,
-                              height: 30,
-                              fit: BoxFit.cover,
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    restaurant['name'],
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 1),
-                                  Text(
-                                    "${restaurant['rating']} (${restaurant['orders']}+)",
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                  Text(
-                                    restaurant['details'],
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-
-                                  Text(
-                                    "최소 주문: ${restaurant['minOrder']}",
-                                    style: const TextStyle(
-                                        fontSize: 12, color: Colors.grey),
-                                  ),
-                                  //maxLines: 2,
-                                  //overflow: TextOverflow.ellipsis,
-                                ],
+            child: StreamBuilder(
+              stream: FirebaseFirestore.instance
+                  .collection('categorys')
+                  .snapshots(),
+              builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return const Center(child: Text('Error loading data'));
+                } else if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No restaurants available'));
+                } else {
+                  return ListView(
+                    children: snapshot.data!.docs.map((doc) {
+                      final restaurant = doc.data() as Map<String, dynamic>;
+                      return GestureDetector(
+                        onTap: () => _navigateToRestaurantPage(doc),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.white,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.grey.withOpacity(0.2),
+                                spreadRadius: 2,
+                                blurRadius: 5,
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Image.network(
+                                restaurant['ImgUrl'],
+                                width: 100,
+                                height: 30,
+                                fit: BoxFit.cover,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      restaurant['category'],
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 1),
+                                    Text(
+                                      "Rating: ${restaurant['rating']}",
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                      );
+                    }).toList(),
+                  );
+                }
+              },
             ),
           ),
         ],

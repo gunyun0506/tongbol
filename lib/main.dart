@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:tongbokapp/home_page.dart';
 import 'package:tongbokapp/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:tongbokapp/login_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,8 +16,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Shopping App',
-      home: HomePage(),
+      title: 'TongBokApp',
+      home: const LoginPage(),
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
