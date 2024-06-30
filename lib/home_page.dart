@@ -2,11 +2,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
+import 'package:intl/intl.dart';
 import 'package:tongbokapp/meun_detail_page.dart';
 import 'package:tongbokapp/meun_page.dart';
 import 'item_list_page.dart';
 import 'drawer_widget.dart';
 import 'models/product.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -78,8 +80,9 @@ class HomeBody extends StatefulWidget {
 class _HomeBodyState extends State<HomeBody> {
   late final PageController pageController;
   final TextEditingController searchController = TextEditingController();
-  final List<String> days = ["월요일", "화요일", "수요일", "목요일", "금요일"];
-  final List<String> dates = ["6월 24일", "6월 25일", "6월 26일", "6월 27일", "6월 28일"];
+  List<String> days = [];
+  List<String> dates = [];
+
   final List<String> menus = [
     "메뉴 한식: 메뉴 아이템 1",
     "메뉴 중식: 메뉴 아이템 4",
@@ -92,6 +95,7 @@ class _HomeBodyState extends State<HomeBody> {
   void initState() {
     super.initState();
     pageController = PageController(initialPage: 0, viewportFraction: 0.85);
+    _generateDatesAndDays(); //날짜 및 요일 리스트 생성
   }
 
   @override
@@ -99,6 +103,17 @@ class _HomeBodyState extends State<HomeBody> {
     pageController.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  void _generateDatesAndDays() {
+    final DateFormat dateFormat = DateFormat('MM월 dd일');
+    final DateFormat dayFormat = DateFormat('EEEE', 'ko'); //한국어 요일 형식임
+
+    for (int i = 0; i < 5; i++) {
+      final DateTime date = DateTime.now().add(Duration(days: i));
+      dates.add(dateFormat.format(date));
+      days.add(dayFormat.format(date));
+    }
   }
 
   Future<void> _onSearch() async {
