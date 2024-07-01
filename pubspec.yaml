@@ -31,9 +31,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+
   cached_network_image: ^3.2.3
   intl: ^0.17.0
   kpostal: ^0.5.1
+
 
 
   # The following adds the Cupertino Icons font to your application.
@@ -75,7 +77,6 @@ flutter:
     - assets/images/logo/
     - assets/images/logo/market_logo.png
     - assets/images/login_page.png
-    - assets/images/outback.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see
