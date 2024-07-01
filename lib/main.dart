@@ -21,10 +21,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TongBokApp',
-      locale: Locale('ko', 'KR'), // 로케일을 한국어로 설정
-      supportedLocales: [
-        const Locale('en', 'US'),
-        const Locale('ko', 'KR'),
+      locale: const Locale('ko', 'KR'), // 로케일을 한국어로 설정
+      supportedLocales: const [
+        Locale('en', 'US'),
+        Locale('ko', 'KR'),
       ],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

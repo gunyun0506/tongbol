@@ -304,29 +304,29 @@ class _HomeBodyState extends State<HomeBody> {
             ),
           ),
           const SizedBox(height: 40),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   '등록 점포',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                GestureDetector(
-                  onTap: _navigateToMenuDetailPage,
-                  child: Text(
-                    '더보기   ',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                // GestureDetector(
+                //   onTap: _navigateToMenuDetailPage,
+                //   child: Text(
+                //     '더보기   ',
+                //     style: TextStyle(
+                //       fontSize: 13,
+                //       color: Colors.grey[600],
+                //       fontWeight: FontWeight.bold,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
           ),
