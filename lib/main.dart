@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:tongbokapp/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tongbokapp/login_page.dart';
-import 'package:intl/date_symbol_data_local.dart'; // intl 패키지의 date_symbol_data_local impor
+import 'package:intl/date_symbol_data_local.dart';
+// intl 패키지의 date_symbol_data_local impor
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

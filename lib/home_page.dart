@@ -1,25 +1,22 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:tongbokapp/meun_detail_page.dart';
 import 'package:tongbokapp/meun_page.dart';
 import 'item_list_page.dart';
 import 'drawer_widget.dart';
 import 'models/product.dart';
-import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-  void _navigateToRestaurantPage(DocumentSnapshot doc) {}
+  const HomePage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const MyAppBar(),
       body: StreamBuilder(
-        stream: category.snapshots(),
+        stream: FirebaseFirestore.instance.collection('categorys').snapshots(),
         builder: (BuildContext context,
             AsyncSnapshot<QuerySnapshot> streamSnapshot) {
           if (streamSnapshot.connectionState == ConnectionState.waiting) {
@@ -40,11 +37,8 @@ class HomePage extends StatelessWidget {
   }
 }
 
-CollectionReference category =
-    FirebaseFirestore.instance.collection('categorys');
-
 class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const MyAppBar({super.key});
+  const MyAppBar({Key? key}) : super(key: key);
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -56,13 +50,9 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.white,
       centerTitle: true,
       iconTheme: const IconThemeData(color: Colors.black),
-      title: const Row(
-        children: [
-          Image(
-            image: AssetImage('assets/images/logo/market_logo.png'),
-            height: 65,
-          ),
-        ],
+      title: const Image(
+        image: AssetImage('assets/images/logo/market_logo.png'),
+        height: 65,
       ),
     );
   }
@@ -71,7 +61,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
 class HomeBody extends StatefulWidget {
   final int categoryCount;
 
-  const HomeBody({super.key, required this.categoryCount});
+  const HomeBody({Key? key, required this.categoryCount}) : super(key: key);
 
   @override
   _HomeBodyState createState() => _HomeBodyState();
@@ -156,6 +146,7 @@ class _HomeBodyState extends State<HomeBody> {
               ),
               child: TextField(
                 controller: searchController,
+                textInputAction: TextInputAction.search, // 검색 동작으로 지정
                 onSubmitted: (value) => _onSearch(),
                 decoration: const InputDecoration(
                   border: InputBorder.none,
