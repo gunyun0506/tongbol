@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:tongbokapp/item_basket_page.dart';
 import 'package:tongbokapp/meun_detail_page.dart';
 import 'package:tongbokapp/meun_page.dart';
 import 'item_list_page.dart';
@@ -31,7 +32,7 @@ class HomePage extends StatelessWidget {
         },
       ),
       drawer: const CustomDrawer(),
-      backgroundColor: Color.fromARGB(255, 250, 250, 250),
+      backgroundColor: const Color.fromARGB(255, 250, 250, 250),
     );
   }
 }
@@ -52,6 +53,21 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
         image: AssetImage('assets/images/logo/market_logo.png'),
         height: 65,
       ),
+      actions: [
+        IconButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => ItemBasketPage()),
+            );
+          },
+          icon: const Icon(Icons.shopping_cart,
+              color: Color.fromARGB(255, 100, 100, 100)),
+        ),
+        const SizedBox(
+          width: 8,
+        ),
+      ],
     );
   }
 }
@@ -138,9 +154,9 @@ class _HomeBodyState extends State<HomeBody> {
             child: Container(
               height: 45,
               alignment: Alignment.center,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: Color.fromARGB(255, 243, 240, 240),
-                borderRadius: const BorderRadius.all(Radius.circular(10)),
+                borderRadius: BorderRadius.all(Radius.circular(10)),
               ),
               child: TextField(
                 controller: searchController,
@@ -392,10 +408,11 @@ class _HomeBodyState extends State<HomeBody> {
                                     ),
                                     Text(
                                       restaurant['detail'],
-                                      style: TextStyle(
-                                        color: const Color.fromARGB(
-                                            255, 97, 97, 97),
+                                      style: const TextStyle(
+                                        color:
+                                            Color.fromARGB(255, 131, 130, 130),
                                         fontSize: 14,
+                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const SizedBox(height: 2),

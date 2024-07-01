@@ -3,7 +3,6 @@ import 'package:tongbokapp/constants.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:tongbokapp/login_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
-// intl 패키지의 date_symbol_data_local impor
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 Future<void> main() async {
@@ -20,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TongBokApp',
+      title: '통복시장',
       locale: const Locale('ko', 'KR'), // 로케일을 한국어로 설정
       supportedLocales: const [
         Locale('en', 'US'),
