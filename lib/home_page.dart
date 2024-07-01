@@ -6,7 +6,6 @@ import 'package:tongbokapp/meun_detail_page.dart';
 import 'package:tongbokapp/meun_page.dart';
 import 'item_list_page.dart';
 import 'drawer_widget.dart';
-import 'models/product.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -32,7 +31,7 @@ class HomePage extends StatelessWidget {
         },
       ),
       drawer: const CustomDrawer(),
-      backgroundColor: Colors.white,
+      backgroundColor: Color.fromARGB(255, 250, 250, 250),
     );
   }
 }
@@ -48,7 +47,6 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.white,
-      centerTitle: true,
       iconTheme: const IconThemeData(color: Colors.black),
       title: const Image(
         image: AssetImage('assets/images/logo/market_logo.png'),
@@ -141,7 +139,7 @@ class _HomeBodyState extends State<HomeBody> {
               height: 45,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: const Color(0xffE1E2E4).withAlpha(100),
+                color: Color.fromARGB(255, 243, 240, 240),
                 borderRadius: const BorderRadius.all(Radius.circular(10)),
               ),
               child: TextField(
@@ -160,10 +158,6 @@ class _HomeBodyState extends State<HomeBody> {
             ),
           ),
           const SizedBox(width: 20),
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.black54),
-            onPressed: _onSearch,
-          ),
         ],
       ),
     );
@@ -218,14 +212,20 @@ class _HomeBodyState extends State<HomeBody> {
                   ),
                   child: Container(
                     margin: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
+                        horizontal: 20, vertical: 16),
                     child: Stack(
                       children: [
                         Container(
                           height: 150,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(24.0),
-                            border: Border.all(color: Colors.grey, width: 0.8),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.grey.withOpacity(0.2),
+                                  spreadRadius: 3,
+                                  blurRadius: 8,
+                                  offset: const Offset(1, 7)),
+                            ],
                             color: Colors.white,
                           ),
                         ),
@@ -310,19 +310,19 @@ class _HomeBodyState extends State<HomeBody> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
-                  '입점 점포',
+                  '등록 점포',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 GestureDetector(
                   onTap: _navigateToMenuDetailPage,
-                  child: const Text(
+                  child: Text(
                     '더보기   ',
                     style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
+                      fontSize: 13,
+                      color: Colors.grey[600],
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -366,11 +366,14 @@ class _HomeBodyState extends State<HomeBody> {
                           ),
                           child: Row(
                             children: [
-                              Image.network(
-                                restaurant['ImgUrl'],
-                                width: 100,
-                                height: 30,
-                                fit: BoxFit.cover,
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12.0),
+                                child: Image.network(
+                                  restaurant['ImgUrl'],
+                                  width: 60,
+                                  height: 60,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Expanded(
@@ -380,11 +383,22 @@ class _HomeBodyState extends State<HomeBody> {
                                     Text(
                                       restaurant['category'],
                                       style: const TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 17,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(height: 1),
+                                    const SizedBox(
+                                      height: 5,
+                                    ),
+                                    Text(
+                                      restaurant['detail'],
+                                      style: TextStyle(
+                                        color: const Color.fromARGB(
+                                            255, 97, 97, 97),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
                                     Text(
                                       "Rating: ${restaurant['rating']}",
                                       style: const TextStyle(

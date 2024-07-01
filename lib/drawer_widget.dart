@@ -13,8 +13,8 @@ class CustomDrawer extends StatelessWidget {
         children: [
           DrawerHeader(
             margin: const EdgeInsets.all(0),
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(121, 79, 165, 158), // 16진수 색상 코드로 색상 지정
+            decoration: BoxDecoration(
+              color: Colors.white, // 16진수 색상 코드로 색상 지정
             ),
             child: SizedBox(
               width: double.infinity,
@@ -78,6 +78,15 @@ class CustomDrawer extends StatelessWidget {
               // 로그아웃 후에 로그인 페이지로 이동하도록 할 수도 있음
             },
           ),
+          const SizedBox(
+            height: 400,
+          ),
+          const Padding(
+              padding: EdgeInsets.fromLTRB(160, 55, 0, 0),
+              child: Image(
+                image: AssetImage('assets/images/logo/logo.png'),
+                width: 90,
+              ))
         ],
       ),
     );
