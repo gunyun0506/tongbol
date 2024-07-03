@@ -143,6 +143,7 @@ class _HomeBodyState extends State<HomeBody> {
           );
         }
       } catch (e) {
+        print("Error searching for category: $e");
         // 에러 발생 시 사용자에게 알림을 보여줄 수 있음
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
