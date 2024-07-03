@@ -1,8 +1,8 @@
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:tongbokapp/item_basket_page.dart';
 import 'package:tongbokapp/meun_detail_page.dart';
 import 'package:tongbokapp/meun_page.dart';
 import 'item_list_page.dart';
@@ -32,7 +32,7 @@ class HomePage extends StatelessWidget {
         },
       ),
       drawer: const CustomDrawer(),
-      backgroundColor: const Color.fromARGB(255, 250, 250, 250),
+      backgroundColor: Color.fromARGB(255, 250, 250, 250),
     );
   }
 }
@@ -50,24 +50,9 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.black),
       title: const Image(
-        image: AssetImage('assets/images/logo/final_logo.png'),
+        image: AssetImage('assets/images/logo/market_logo.png'),
         height: 65,
       ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => ItemBasketPage()),
-            );
-          },
-          icon: const Icon(Icons.shopping_cart,
-              color: Color.fromARGB(255, 100, 100, 100)),
-        ),
-        const SizedBox(
-          width: 8,
-        ),
-      ],
     );
   }
 }
@@ -130,36 +115,24 @@ class _HomeBodyState extends State<HomeBody> {
             .where('category', isEqualTo: searchQuery)
             .get();
 
-        if (querySnapshot.docs.isNotEmpty) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ItemListPage(searchCategory: searchQuery),
+      if (querySnapshot.docs.isNotEmpty) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ItemListPage(
+              category: searchQuery,
+              productDescription: 'productDescription',
+              productName: 'productName',
             ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('No products found for the category $searchQuery'),
-            ),
-          );
-        }
-      } catch (e) {
-        print("Error searching for category: $e");
-        // 에러 발생 시 사용자에게 알림을 보여줄 수 있음
+          ),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error searching for category: $e'),
+            content: Text('No products found for the category $searchQuery'),
           ),
         );
       }
-    } else {
-      // 검색어가 비어 있을 때 처리할 내용 추가
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Please enter a search query.'),
-        ),
-      );
     }
   }
 
@@ -172,9 +145,9 @@ class _HomeBodyState extends State<HomeBody> {
             child: Container(
               height: 45,
               alignment: Alignment.center,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: Color.fromARGB(255, 243, 240, 240),
-                borderRadius: BorderRadius.all(Radius.circular(10)),
+                borderRadius: const BorderRadius.all(Radius.circular(10)),
               ),
               child: TextField(
                 controller: searchController,
@@ -211,7 +184,13 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   void _navigateToRestaurantPage(DocumentSnapshot restaurant) {
-    // Navigate to restaurant page using restaurant data
+    String category = restaurant['category']; // restaurant에서 카테고리 정보 추출
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ItemListPage(category: category),
+      ),
+    );
   }
 
   void _navigateToMenuDetailPage() {
@@ -426,11 +405,10 @@ class _HomeBodyState extends State<HomeBody> {
                                     ),
                                     Text(
                                       restaurant['detail'],
-                                      style: const TextStyle(
-                                        color:
-                                            Color.fromARGB(255, 131, 130, 130),
+                                      style: TextStyle(
+                                        color: const Color.fromARGB(
+                                            255, 97, 97, 97),
                                         fontSize: 14,
-                                        fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     const SizedBox(height: 2),

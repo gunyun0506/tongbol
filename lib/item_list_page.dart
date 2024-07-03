@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart'; // numberFormat을 위해 추가
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:intl/intl.dart'; // numberFormat을 위해 추가
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'item_details_page.dart';
 import 'models/product.dart';
 
 class ItemListPage extends StatefulWidget {
-  final String searchCategory;
+  final String category;
 
-  ItemListPage({required this.searchCategory});
+  const ItemListPage({super.key, required this.category});
 
   @override
   _ItemListPageState createState() => _ItemListPageState();
@@ -16,75 +18,55 @@ class ItemListPage extends StatefulWidget {
 
 class _ItemListPageState extends State<ItemListPage> {
   List<Product> productList = [];
+  late List<Product> filteredProducts;
+  bool isLoading = false; // 데이터 로딩 상태를 나타내는 변수
+  String errorMessage = ''; // 에러 메시지를 저장하는 변수
 
   @override
   void initState() {
     super.initState();
+    filteredProducts = [];
     fetchProducts();
   }
 
   Future<void> fetchProducts() async {
-    try {
-      QuerySnapshot categorySnapshot = await FirebaseFirestore.instance
-          .collection('categorys')
-          .where('category', isEqualTo: widget.searchCategory)
-          .get();
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('products')
+        .where('category', isEqualTo: widget.category)
+        .get();
 
-      if (categorySnapshot.docs.isNotEmpty) {
-        String categoryId = categorySnapshot.docs.first.id;
-
-        QuerySnapshot productsSnapshot = await FirebaseFirestore.instance
-            .collection('categorys')
-            .doc(categoryId)
-            .collection('products')
-            .get();
-
-        setState(() {
-          productList = productsSnapshot.docs.map((doc) {
-            return Product(
-              productNo: doc['productNo'],
-              productName: doc['productName'],
-              productImageUrl: doc['productImageUrl'],
-              price: doc['price'].toDouble(),
-            );
-          }).toList();
-        });
-
-        if (productList.isEmpty) {
-          print("No products found in the selected category.");
-        } else {
-          print("Products fetched successfully: ${productList.length}");
-        }
-      } else {
-        print("No category document found for ${widget.searchCategory}");
-      }
-    } catch (e) {
-      print("Error fetching products: $e");
-    }
+    setState(() {
+      productList = querySnapshot.docs.map((doc) {
+        return Product(
+          productNo: doc['productNo'],
+          productName: doc['productName'],
+          productImageUrl: doc['productImageUrl'],
+          price: doc['price'].toDouble(),
+        );
+      }).toList();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.searchCategory),
+        title: Text(widget.category),
         centerTitle: true,
       ),
-      body: productList.isEmpty
-          ? Center(child: Text("No products available"))
-          : GridView.builder(
-              itemCount: productList.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  childAspectRatio: 0.9, crossAxisCount: 2),
-              itemBuilder: (context, index) {
-                return productContainer(
-                  productNo: productList[index].productNo ?? 0,
-                  productName: productList[index].productName ?? "",
-                  productImageUrl: productList[index].productImageUrl ?? "",
-                  price: productList[index].price ?? 0,
-                );
-              },
-            ),
+      body: GridView.builder(
+        itemCount: productList.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            childAspectRatio: 0.9, crossAxisCount: 2),
+        itemBuilder: (context, index) {
+          return productContainer(
+            productNo: productList[index].productNo ?? 0,
+            productName: productList[index].productName ?? "",
+            productImageUrl: productList[index].productImageUrl ?? "",
+            price: productList[index].price ?? 0,
+          );
+        },
+      ),
     );
   }
 
@@ -99,11 +81,10 @@ class _ItemListPageState extends State<ItemListPage> {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) {
             return ItemDetailsPage(
-              productNo: productNo,
-              productName: productName,
-              productImageUrl: productImageUrl,
-              price: price,
-            );
+                productNo: productNo,
+                productName: productName,
+                productImageUrl: productImageUrl,
+                price: price);
           },
         ));
       },
@@ -124,7 +105,7 @@ class _ItemListPageState extends State<ItemListPage> {
               },
               errorWidget: (context, url, error) {
                 return const Center(
-                  child: Text("오류 발생"),
+                  child: Text("이미지 로드 오류"),
                 );
               },
             ),
@@ -144,6 +125,48 @@ class _ItemListPageState extends State<ItemListPage> {
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.category), // 카테고리명으로 AppBar 제목 설정
+        centerTitle: true,
+      ),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(), // 로딩 인디케이터 표시
+            )
+          : errorMessage.isNotEmpty
+              ? Center(
+                  child: Text(errorMessage), // 에러 메시지 표시
+                )
+              : Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        itemCount: filteredProducts.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          childAspectRatio: 0.9, // 그리드 아이템의 가로 세로 비율 설정
+                          crossAxisCount: 2, // 그리드 열의 수 설정
+                        ),
+                        itemBuilder: (context, index) {
+                          return productContainer(
+                            productNo: filteredProducts[index].productNo ?? 0,
+                            productName:
+                                filteredProducts[index].productName ?? "",
+                            productImageUrl:
+                                filteredProducts[index].productImageUrl ?? "",
+                            price: filteredProducts[index].price ?? 0,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 }
