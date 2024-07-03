@@ -1,22 +1,25 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tongbokapp/constants.dart';
 import 'package:tongbokapp/item_basket_page.dart';
 
+// ignore: must_be_immutable
 class ItemDetailsPage extends StatefulWidget {
-  final int productNo;
-  final String productName;
-  final String productImageUrl;
-  final double price;
+  int productNo;
 
-  ItemDetailsPage({
-    required this.productNo,
-    required this.productName,
-    required this.productImageUrl,
-    required this.price,
-  });
+  String productName;
+
+  String productImageUrl;
+
+  double price;
+
+  ItemDetailsPage(
+      {super.key,
+      required this.productNo,
+      required this.productName,
+      required this.productImageUrl,
+      required this.price});
 
   @override
   State<ItemDetailsPage> createState() => _ItemDetailsPageState();
@@ -24,13 +27,17 @@ class ItemDetailsPage extends StatefulWidget {
 
 class _ItemDetailsPageState extends State<ItemDetailsPage> {
   int quantity = 1;
-  final NumberFormat numberFormat = NumberFormat('#,##0', 'ko_KR');
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("제품 상세 페이지"),
+        title: const Text("제품 상세 페이지"),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -46,27 +53,37 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       ),
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(20),
-        child: ElevatedButton(
+        child: FilledButton(
           onPressed: () {
-            // 장바구니에 상품 추가
+            //! 임시 장바구니 변수 Map 선언 - 디스크에서 받아옴
+
             Map<String, dynamic> cartMap =
                 json.decode(sharedPreferences.getString("cartMap") ?? "{}") ??
                     {};
 
+            //! 장바구니에 해당 제품이 없으면
+
             if (cartMap[widget.productNo.toString()] == null) {
               cartMap.addAll({widget.productNo.toString(): quantity});
             } else {
+              //! 제품이 있으면
+
               cartMap[widget.productNo.toString()] += quantity;
             }
 
+            //! 디스크에 다시 반영
+
             sharedPreferences.setString("cartMap", json.encode(cartMap));
 
-            // 장바구니 페이지로 이동
+            print(cartMap);
+
+            //! 장바구니 페이지로 이동
+
             Navigator.of(context).push(MaterialPageRoute(builder: (context) {
-              return ItemBasketPage();
+              return const ItemBasketPage();
             }));
           },
-          child: Text("장바구니 담기"),
+          child: const Text("장바구니 담기"),
         ),
       ),
     );
