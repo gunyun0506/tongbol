@@ -64,9 +64,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.shopping_cart,
               color: Color.fromARGB(255, 100, 100, 100)),
         ),
-        const SizedBox(
-          width: 8,
-        ),
+        const SizedBox(width: 8),
       ],
     );
   }
@@ -210,7 +208,13 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   void _navigateToRestaurantPage(DocumentSnapshot restaurant) {
-    // Navigate to restaurant page using restaurant data
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) =>
+            ItemListPage(searchCategory: restaurant['category']),
+      ),
+    );
   }
 
   void _navigateToMenuDetailPage() {
@@ -349,17 +353,6 @@ class _HomeBodyState extends State<HomeBody> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                // GestureDetector(
-                //   onTap: _navigateToMenuDetailPage,
-                //   child: Text(
-                //     '더보기   ',
-                //     style: TextStyle(
-                //       fontSize: 13,
-                //       color: Colors.grey[600],
-                //       fontWeight: FontWeight.bold,
-                //     ),
-                //   ),
-                // ),
               ],
             ),
           ),
@@ -420,9 +413,7 @@ class _HomeBodyState extends State<HomeBody> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const SizedBox(
-                                      height: 5,
-                                    ),
+                                    const SizedBox(height: 5),
                                     Text(
                                       restaurant['detail'],
                                       style: const TextStyle(
