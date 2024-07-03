@@ -49,18 +49,8 @@ class _ItemListPageState extends State<ItemListPage> {
             );
           }).toList();
         });
-
-        if (productList.isEmpty) {
-          print("No products found in the selected category.");
-        } else {
-          print("Products fetched successfully: ${productList.length}");
-        }
-      } else {
-        print("No category document found for ${widget.searchCategory}");
       }
-    } catch (e) {
-      print("Error fetching products: $e");
-    }
+    } catch (e) {}
   }
 
   @override

@@ -1,163 +1,114 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter/material.dart';
-
-import 'package:cached_network_image/cached_network_image.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // 추가
+import 'package:tongbokapp/item_checkout_page.dart';
+import 'package:tongbokapp/models/product.dart';
 import 'package:tongbokapp/constants.dart';
 
-import 'package:tongbokapp/item_checkout_page.dart';
-
-import 'package:tongbokapp/models/product.dart';
-
 class ItemBasketPage extends StatefulWidget {
-  const ItemBasketPage({super.key});
-
   @override
   State<ItemBasketPage> createState() => _ItemBasketPageState();
 }
 
 class _ItemBasketPageState extends State<ItemBasketPage> {
-  final database = FirebaseFirestore.instance;
-
-  Query<Product>? productListRef;
-
-  double totalPrice = 0;
-
   Map<String, dynamic> cartMap = {};
-
-  Stream<QuerySnapshot<Product>>? productList;
-
-  List<int> keyList = [];
+  List<int> productNos = [];
+  List<Product> productList = []; // productList 추가
 
   @override
   void initState() {
     super.initState();
+    fetchCartItems();
+  }
 
-    //! 저장한 장바구니 리스트 가져오기
-
+  Future<void> fetchCartItems() async {
     try {
       cartMap =
           json.decode(sharedPreferences.getString("cartMap") ?? "{}") ?? {};
+      productNos = cartMap.keys.map((key) => int.parse(key)).toList();
+
+      // 상품 목록 가져오기
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('products')
+          .where('productNo', whereIn: productNos)
+          .get();
+
+      setState(() {
+        productList = snapshot.docs.map((doc) {
+          return Product(
+            productNo: doc['productNo'],
+            productName: doc['productName'],
+            productImageUrl: doc['productImageUrl'],
+            price: doc['price'].toDouble(),
+          );
+        }).toList();
+      });
     } catch (e) {
-      debugPrint(e.toString());
-
-      cartMap = {};
+      debugPrint("Error fetching cart items: $e");
     }
-
-    //! 조건문에 넘길 product no 키 값 리스트를 선언 (기존 값이 string이어서 int로 변환)
-
-    cartMap.forEach(
-      (key, value) {
-        keyList.add(int.parse(key));
-      },
-    );
-
-    //! 파이어스토어에서 데이터 가져오는 Ref 변수
-
-    if (keyList.isNotEmpty) {
-      productListRef = FirebaseFirestore.instance
-          .collection("products")
-          .withConverter(
-              fromFirestore: (snapshot, _) =>
-                  Product.fromJson(snapshot.data()!),
-              toFirestore: (product, _) => product.toJson())
-          .where("productNo", whereIn: keyList);
-    }
-
-    productList = productListRef?.orderBy("productNo").snapshots();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("장바구니"),
+        title: Text("장바구니"),
         centerTitle: true,
       ),
       body: cartMap.isEmpty
-          ? Container()
-          : StreamBuilder(
-              stream: productList,
+          ? Center(child: Text("장바구니에 상품이 없습니다."))
+          : FutureBuilder(
+              future: fetchCartItems(),
               builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return ListView(
-                    children: snapshot.data!.docs.map((document) {
-                      if (cartMap[document.data().productNo.toString()] !=
-                          null) {
-                        return basketContainer(
-                            productNo: document.data().productNo ?? 0,
-                            productName: document.data().productName ?? "",
-                            productImageUrl:
-                                document.data().productImageUrl ?? "",
-                            price: document.data().price ?? 0,
-                            quantity:
-                                cartMap[document.data().productNo.toString()]);
-                      }
-
-                      return Container();
-                    }).toList(),
-                  );
-                } else if (snapshot.hasError) {
-                  return const Center(
-                    child: Text("오류가 발생 했습니다."),
-                  );
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
                 } else {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
+                  return ListView.builder(
+                    itemCount: productNos.length,
+                    itemBuilder: (context, index) {
+                      int productNo = productNos[index];
+                      Product product = productList.firstWhere(
+                        (prod) => prod.productNo == productNo,
+                        orElse: () => Product(), // 예외 처리
+                      );
+                      return basketContainer(
+                        productNo: product.productNo ?? 0,
+                        productName: product.productName ?? "",
+                        productImageUrl: product.productImageUrl ?? "",
+                        price: product.price ?? 0,
+                        quantity: cartMap[productNo.toString()] ?? 0,
+                      );
+                    },
                   );
                 }
-              }),
+              },
+            ),
       bottomNavigationBar: cartMap.isEmpty
-          ? const Center(
-              child: Text("장바구니에 담긴 제품이 없습니다."),
-            )
-          : StreamBuilder(
-              stream: productList,
+          ? null
+          : FutureBuilder(
+              future: fetchCartItems(),
               builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  totalPrice = 0;
-
-                  snapshot.data?.docs.forEach((document) {
-                    if (cartMap[document.data().productNo.toString()] != null) {
-                      totalPrice +=
-                          cartMap[document.data().productNo.toString()] *
-                                  document.data().price ??
-                              0;
-                    }
-                  });
-
-                  return Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: FilledButton(
-                        onPressed: () {
-                          //! 결제시작 페이지로 이동
-
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) {
-                              return const ItemCheckoutPage();
-                            },
-                          ));
-                        },
-                        child:
-                            Text("총 ${numberFormat.format(totalPrice)}원 결제하기"),
-                      ));
-                } else if (snapshot.hasError) {
-                  return const Center(
-                    child: Text("오류가 발생 했습니다."),
-                  );
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
                 } else {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
+                  double totalPrice = calculateTotalPrice();
+                  return Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                          builder: (context) => ItemCheckoutPage(),
+                        ));
+                      },
+                      child: Text("총 ${numberFormat.format(totalPrice)}원 결제하기"),
                     ),
                   );
                 }
-              }),
+              },
+            ),
     );
   }
 
@@ -168,8 +119,9 @@ class _ItemBasketPageState extends State<ItemBasketPage> {
     required double price,
     required int quantity,
   }) {
+    final numberFormat = NumberFormat('#,##0', 'ko_KR');
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -178,21 +130,13 @@ class _ItemBasketPageState extends State<ItemBasketPage> {
             height: 130,
             fit: BoxFit.cover,
             imageUrl: productImageUrl,
-            placeholder: (context, url) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
-              );
-            },
-            errorWidget: (context, url, error) {
-              return const Center(
-                child: Text("오류 발생"),
-              );
-            },
+            placeholder: (context, url) => Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            errorWidget: (context, url, error) => Center(child: Text("오류 발생")),
           ),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: 15, vertical: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -200,67 +144,42 @@ class _ItemBasketPageState extends State<ItemBasketPage> {
                 Text(
                   productName,
                   textScaleFactor: 1.2,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text("${numberFormat.format(price)}원"),
                 Row(
                   children: [
-                    const Text("수량:"),
+                    Text("수량: "),
                     IconButton(
-                        onPressed: () {
-                          //! 수량 줄이기 (1 초과시에만 감소시킬 수 있음)
-
+                      icon: Icon(Icons.remove),
+                      onPressed: () {
+                        setState(() {
                           if (cartMap[productNo.toString()] > 1) {
-                            setState(() {
-                              //! 수량 1 차감
-
-                              cartMap[productNo.toString()]--;
-
-                              //! 디스크에 반영
-
-                              sharedPreferences.setString(
-                                  "cartMap", json.encode(cartMap));
-                            });
+                            cartMap[productNo.toString()]--;
+                            saveCartMap();
                           }
-                        },
-                        icon: const Icon(
-                          Icons.remove,
-                        )),
+                        });
+                      },
+                    ),
                     Text("$quantity"),
                     IconButton(
-                        onPressed: () {
-                          setState(() {
-                            //! 수량 늘리기
-
-                            cartMap[productNo.toString()]++;
-
-                            //! 디스크에 반영
-
-                            sharedPreferences.setString(
-                                "cartMap", json.encode(cartMap));
-                          });
-                        },
-                        icon: const Icon(
-                          Icons.add,
-                        )),
+                      icon: Icon(Icons.add),
+                      onPressed: () {
+                        setState(() {
+                          cartMap[productNo.toString()]++;
+                          saveCartMap();
+                        });
+                      },
+                    ),
                     IconButton(
-                        onPressed: () {
-                          setState(() {
-                            //! 장바구니에서 해당 제품 제거
-
-                            cartMap.remove(productNo.toString());
-
-                            //! 디스크에 반영
-
-                            sharedPreferences.setString(
-                                "cartMap", json.encode(cartMap));
-                          });
-                        },
-                        icon: const Icon(
-                          Icons.delete,
-                        )),
+                      icon: Icon(Icons.delete),
+                      onPressed: () {
+                        setState(() {
+                          cartMap.remove(productNo.toString());
+                          saveCartMap();
+                        });
+                      },
+                    ),
                   ],
                 ),
                 Text("합계: ${numberFormat.format(price * quantity)}원"),
@@ -270,5 +189,23 @@ class _ItemBasketPageState extends State<ItemBasketPage> {
         ],
       ),
     );
+  }
+
+  double calculateTotalPrice() {
+    double totalPrice = 0;
+    productNos.forEach((productNo) {
+      if (cartMap.containsKey(productNo.toString())) {
+        totalPrice += cartMap[productNo.toString()] *
+            productList
+                .firstWhere((product) => product.productNo == productNo,
+                    orElse: () => Product(price: 0))
+                .price!;
+      }
+    });
+    return totalPrice;
+  }
+
+  void saveCartMap() {
+    sharedPreferences.setString("cartMap", json.encode(cartMap));
   }
 }
