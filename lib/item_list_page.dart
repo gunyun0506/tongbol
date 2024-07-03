@@ -16,10 +16,14 @@ class ItemListPage extends StatefulWidget {
 
 class _ItemListPageState extends State<ItemListPage> {
   List<Product> productList = [];
+  late List<Product> filteredProducts;
+  bool isLoading = false; // 데이터 로딩 상태를 나타내는 변수
+  String errorMessage = ''; // 에러 메시지를 저장하는 변수
 
   @override
   void initState() {
     super.initState();
+    filteredProducts = [];
     fetchProducts();
   }
 
@@ -114,7 +118,7 @@ class _ItemListPageState extends State<ItemListPage> {
               },
               errorWidget: (context, url, error) {
                 return const Center(
-                  child: Text("오류 발생"),
+                  child: Text("이미지 로드 오류"),
                 );
               },
             ),
@@ -134,6 +138,48 @@ class _ItemListPageState extends State<ItemListPage> {
           ],
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.category), // 카테고리명으로 AppBar 제목 설정
+        centerTitle: true,
+      ),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(), // 로딩 인디케이터 표시
+            )
+          : errorMessage.isNotEmpty
+              ? Center(
+                  child: Text(errorMessage), // 에러 메시지 표시
+                )
+              : Column(
+                  children: [
+                    Expanded(
+                      child: GridView.builder(
+                        itemCount: filteredProducts.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          childAspectRatio: 0.9, // 그리드 아이템의 가로 세로 비율 설정
+                          crossAxisCount: 2, // 그리드 열의 수 설정
+                        ),
+                        itemBuilder: (context, index) {
+                          return productContainer(
+                            productNo: filteredProducts[index].productNo ?? 0,
+                            productName:
+                                filteredProducts[index].productName ?? "",
+                            productImageUrl:
+                                filteredProducts[index].productImageUrl ?? "",
+                            price: filteredProducts[index].price ?? 0,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
     );
   }
 }
