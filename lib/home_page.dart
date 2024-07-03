@@ -50,7 +50,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: Colors.white,
       iconTheme: const IconThemeData(color: Colors.black),
       title: const Image(
-        image: AssetImage('assets/images/logo/market_logo.png'),
+        image: AssetImage('assets/images/logo/final_logo.png'),
         height: 65,
       ),
       actions: [
