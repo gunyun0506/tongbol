@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:intl/intl.dart'; // numberFormat을 위해 추가
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart'; // numberFormat을 위해 추가
+import 'package:cached_network_image/cached_network_image.dart';
 import 'item_details_page.dart';
 import 'models/product.dart';
 
 class ItemListPage extends StatefulWidget {
-  final String category;
+  final String searchCategory;
 
-  const ItemListPage({super.key, required this.category});
+  ItemListPage({required this.searchCategory});
 
   @override
-  State<ItemListPage> createState() => _ItemListPageState();
+  _ItemListPageState createState() => _ItemListPageState();
 }
 
 class _ItemListPageState extends State<ItemListPage> {
@@ -24,43 +24,67 @@ class _ItemListPageState extends State<ItemListPage> {
   }
 
   Future<void> fetchProducts() async {
-    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-        .collection('products')
-        .where('category', isEqualTo: widget.category)
-        .get();
+    try {
+      QuerySnapshot categorySnapshot = await FirebaseFirestore.instance
+          .collection('categorys')
+          .where('category', isEqualTo: widget.searchCategory)
+          .get();
 
-    setState(() {
-      productList = querySnapshot.docs.map((doc) {
-        return Product(
-          productNo: doc['productNo'],
-          productName: doc['productName'],
-          productImageUrl: doc['productImageUrl'],
-          price: doc['price'].toDouble(),
-        );
-      }).toList();
-    });
+      if (categorySnapshot.docs.isNotEmpty) {
+        String categoryId = categorySnapshot.docs.first.id;
+
+        QuerySnapshot productsSnapshot = await FirebaseFirestore.instance
+            .collection('categorys')
+            .doc(categoryId)
+            .collection('products')
+            .get();
+
+        setState(() {
+          productList = productsSnapshot.docs.map((doc) {
+            return Product(
+              productNo: doc['productNo'],
+              productName: doc['productName'],
+              productImageUrl: doc['productImageUrl'],
+              price: doc['price'].toDouble(),
+            );
+          }).toList();
+        });
+
+        if (productList.isEmpty) {
+          print("No products found in the selected category.");
+        } else {
+          print("Products fetched successfully: ${productList.length}");
+        }
+      } else {
+        print("No category document found for ${widget.searchCategory}");
+      }
+    } catch (e) {
+      print("Error fetching products: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.category),
+        title: Text(widget.searchCategory),
         centerTitle: true,
       ),
-      body: GridView.builder(
-        itemCount: productList.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            childAspectRatio: 0.9, crossAxisCount: 2),
-        itemBuilder: (context, index) {
-          return productContainer(
-            productNo: productList[index].productNo ?? 0,
-            productName: productList[index].productName ?? "",
-            productImageUrl: productList[index].productImageUrl ?? "",
-            price: productList[index].price ?? 0,
-          );
-        },
-      ),
+      body: productList.isEmpty
+          ? Center(child: Text("No products available"))
+          : GridView.builder(
+              itemCount: productList.length,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  childAspectRatio: 0.9, crossAxisCount: 2),
+              itemBuilder: (context, index) {
+                return productContainer(
+                  productNo: productList[index].productNo ?? 0,
+                  productName: productList[index].productName ?? "",
+                  productImageUrl: productList[index].productImageUrl ?? "",
+                  price: productList[index].price ?? 0,
+                );
+              },
+            ),
     );
   }
 
@@ -75,10 +99,11 @@ class _ItemListPageState extends State<ItemListPage> {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) {
             return ItemDetailsPage(
-                productNo: productNo,
-                productName: productName,
-                productImageUrl: productImageUrl,
-                price: price);
+              productNo: productNo,
+              productName: productName,
+              productImageUrl: productImageUrl,
+              price: price,
+            );
           },
         ));
       },

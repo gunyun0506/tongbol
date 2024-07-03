@@ -121,27 +121,45 @@ class _HomeBodyState extends State<HomeBody> {
   }
 
   Future<void> _onSearch() async {
-    String searchQuery = searchController.text;
-    if (searchQuery.isNotEmpty) {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('categorys')
-          .where('category', isEqualTo: searchQuery)
-          .get();
+    String searchQuery = searchController.text.trim(); // 검색어 앞뒤 공백 제거
 
-      if (querySnapshot.docs.isNotEmpty) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ItemListPage(category: searchQuery),
-          ),
-        );
-      } else {
+    if (searchQuery.isNotEmpty) {
+      try {
+        QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+            .collection('categorys')
+            .where('category', isEqualTo: searchQuery)
+            .get();
+
+        if (querySnapshot.docs.isNotEmpty) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ItemListPage(searchCategory: searchQuery),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('No products found for the category $searchQuery'),
+            ),
+          );
+        }
+      } catch (e) {
+        print("Error searching for category: $e");
+        // 에러 발생 시 사용자에게 알림을 보여줄 수 있음
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('No products found for the category $searchQuery'),
+            content: Text('Error searching for category: $e'),
           ),
         );
       }
+    } else {
+      // 검색어가 비어 있을 때 처리할 내용 추가
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter a search query.'),
+        ),
+      );
     }
   }
 
