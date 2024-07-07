@@ -64,7 +64,7 @@ class MyAppBar extends StatelessWidget implements PreferredSizeWidget {
           icon: const Icon(Icons.shopping_cart,
               color: Color.fromARGB(255, 100, 100, 100)),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
       ],
     );
   }
@@ -84,20 +84,14 @@ class _HomeBodyState extends State<HomeBody> {
   final TextEditingController searchController = TextEditingController();
   List<String> days = [];
   List<String> dates = [];
-
-  final List<String> menus = [
-    "메뉴 한식: 메뉴 아이템 1",
-    "메뉴 중식: 메뉴 아이템 4",
-    "메뉴 일식: 메뉴 아이템 7",
-    "메뉴 양식: 메뉴 아이템 10",
-    "메뉴 특별식: 메뉴 아이템 13",
-  ];
+  List<String> menu = [];
 
   @override
   void initState() {
     super.initState();
     pageController = PageController(initialPage: 0, viewportFraction: 0.85);
     _generateDatesAndDays(); //날짜 및 요일 리스트 생성
+    _fetchMenus();
   }
 
   @override
@@ -105,6 +99,23 @@ class _HomeBodyState extends State<HomeBody> {
     pageController.dispose();
     searchController.dispose();
     super.dispose();
+  }
+
+  void _fetchMenus() async {
+    try {
+      QuerySnapshot querySnapshot =
+          await FirebaseFirestore.instance.collection('menus').get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        setState(() {
+          menu =
+              querySnapshot.docs.map((doc) => doc['menu'] as String).toList();
+        });
+      }
+    } catch (e) {
+      print("Error fetching menus: $e");
+      // 에러 처리
+    }
   }
 
   void _generateDatesAndDays() {
@@ -189,7 +200,7 @@ class _HomeBodyState extends State<HomeBody> {
               ),
             ),
           ),
-          const SizedBox(width: 20),
+          const SizedBox(width: 30),
         ],
       ),
     );
@@ -243,11 +254,15 @@ class _HomeBodyState extends State<HomeBody> {
               itemCount: days.length,
               itemBuilder: (_, index) {
                 return InkWell(
-                  onTap: () => _navigateToMenuPage(
-                    days[index],
-                    dates[index],
-                    menus[index],
-                  ),
+                  onTap: () {
+                    if (menu.isNotEmpty && index < menu.length) {
+                      _navigateToMenuPage(
+                        days[index],
+                        dates[index],
+                        menu[index],
+                      );
+                    }
+                  },
                   child: Container(
                     margin: const EdgeInsets.symmetric(
                         horizontal: 20, vertical: 16),
@@ -296,13 +311,28 @@ class _HomeBodyState extends State<HomeBody> {
                                   fontSize: 16,
                                 ),
                               ),
-                              Text(
-                                menus[index],
+                              menu.isNotEmpty && index < menu.length
+                                  ? Text(
+                                      menu[index],
+                                      style: const TextStyle(
+                                        color: Colors.black,
+                                        fontSize: 14,
+                                      ),
+                                    )
+                                  : const Text(
+                                      "메뉴 없음",
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                              /* Text(
+                                menu[index],
                                 style: const TextStyle(
                                   color: Colors.black,
                                   fontSize: 14,
                                 ),
-                              ),
+                              ), */
                             ],
                           ),
                         ),
