@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tongbokapp/constants.dart';
-import 'package:tongbokapp/models/product.dart';
 
 // ignore: must_be_immutable
 class ItemOrderResultPage extends StatefulWidget {
@@ -34,19 +33,6 @@ class ItemOrderResultPage extends StatefulWidget {
 }
 
 class _ItemOrderResultPageState extends State<ItemOrderResultPage> {
-  List<Product> orderList = [
-    Product(
-        productNo: 1,
-        productName: "노트북(Laptop)",
-        productImageUrl: "https://picsum.photos/id/1/300/300",
-        price: 600000),
-    Product(
-        productNo: 4,
-        productName: "키보드(Keyboard)",
-        productImageUrl: "https://picsum.photos/id/60/300/300",
-        price: 50000),
-  ];
-
   List<Map<int, int>> quantityList = [
     {1: 2},
     {4: 3},

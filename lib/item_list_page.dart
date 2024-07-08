@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; // numberFormat을 위해 추가
+import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'item_details_page.dart';
 import 'models/product.dart';
@@ -16,6 +16,7 @@ class ItemListPage extends StatefulWidget {
 
 class _ItemListPageState extends State<ItemListPage> {
   List<Product> productList = [];
+  String? categoryId;
 
   @override
   void initState() {
@@ -31,7 +32,7 @@ class _ItemListPageState extends State<ItemListPage> {
           .get();
 
       if (categorySnapshot.docs.isNotEmpty) {
-        String categoryId = categorySnapshot.docs.first.id;
+        categoryId = categorySnapshot.docs.first.id;
 
         QuerySnapshot productsSnapshot = await FirebaseFirestore.instance
             .collection('categorys')
@@ -41,12 +42,7 @@ class _ItemListPageState extends State<ItemListPage> {
 
         setState(() {
           productList = productsSnapshot.docs.map((doc) {
-            return Product(
-              productNo: doc['productNo'],
-              productName: doc['productName'],
-              productImageUrl: doc['productImageUrl'],
-              price: doc['price'].toDouble(),
-            );
+            return Product.fromJson(doc.data() as Map<String, dynamic>);
           }).toList();
         });
 
@@ -78,10 +74,8 @@ class _ItemListPageState extends State<ItemListPage> {
                   childAspectRatio: 0.9, crossAxisCount: 2),
               itemBuilder: (context, index) {
                 return productContainer(
-                  productNo: productList[index].productNo ?? 0,
-                  productName: productList[index].productName ?? "",
-                  productImageUrl: productList[index].productImageUrl ?? "",
-                  price: productList[index].price ?? 0,
+                  categoryId: categoryId!,
+                  product: productList[index],
                 );
               },
             ),
@@ -89,20 +83,18 @@ class _ItemListPageState extends State<ItemListPage> {
   }
 
   Widget productContainer(
-      {required int productNo,
-      required String productName,
-      required String productImageUrl,
-      required double price}) {
-    final numberFormat = NumberFormat('#,##0', 'ko_KR'); // 숫자 포맷 정의
+      {required String categoryId, required Product product}) {
+    final numberFormat = NumberFormat('#,##0', 'ko_KR');
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(MaterialPageRoute(
           builder: (context) {
             return ItemDetailsPage(
-              productNo: productNo,
-              productName: productName,
-              productImageUrl: productImageUrl,
-              price: price,
+              categoryId: categoryId,
+              productNo: product.productNo!,
+              productName: product.productName!,
+              productImageUrl: product.productImageUrl!,
+              price: product.price!,
             );
           },
         ));
@@ -114,7 +106,7 @@ class _ItemListPageState extends State<ItemListPage> {
             CachedNetworkImage(
               height: 150,
               fit: BoxFit.cover,
-              imageUrl: productImageUrl,
+              imageUrl: product.productImageUrl!,
               placeholder: (context, url) {
                 return const Center(
                   child: CircularProgressIndicator(
@@ -131,7 +123,7 @@ class _ItemListPageState extends State<ItemListPage> {
             Container(
               padding: const EdgeInsets.all(8),
               child: Text(
-                productName,
+                product.productName!,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                 ),
@@ -139,7 +131,7 @@ class _ItemListPageState extends State<ItemListPage> {
             ),
             Container(
               padding: const EdgeInsets.all(8),
-              child: Text("${numberFormat.format(price)}원"),
+              child: Text("${numberFormat.format(product.price)}원"),
             ),
           ],
         ),

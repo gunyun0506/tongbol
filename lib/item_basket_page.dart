@@ -1,73 +1,63 @@
 import 'dart:convert';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 import 'package:flutter/material.dart';
-
-import 'package:cached_network_image/cached_network_image.dart';
-
 import 'package:tongbokapp/constants.dart';
-
 import 'package:tongbokapp/item_checkout_page.dart';
 
-import 'package:tongbokapp/models/product.dart';
-
 class ItemBasketPage extends StatefulWidget {
-  const ItemBasketPage({super.key});
+  final String categoryId;
+  final int productNo;
+  final String productName;
+  final String productImageUrl;
+  final double price;
+
+  ItemBasketPage({
+    Key? key,
+    required this.price,
+    required this.categoryId,
+    required this.productNo,
+    required this.productName,
+    required this.productImageUrl,
+  }) : super(key: key);
 
   @override
   State<ItemBasketPage> createState() => _ItemBasketPageState();
 }
 
 class _ItemBasketPageState extends State<ItemBasketPage> {
-  final database = FirebaseFirestore.instance;
-
-  Query<Product>? productListRef;
-
   double totalPrice = 0;
-
   Map<String, dynamic> cartMap = {};
-
-  Stream<QuerySnapshot<Product>>? productList;
-
-  List<int> keyList = [];
 
   @override
   void initState() {
     super.initState();
 
-    //! 저장한 장바구니 리스트 가져오기
-
+    // Load the cart items from shared preferences
     try {
       cartMap =
           json.decode(sharedPreferences.getString("cartMap") ?? "{}") ?? {};
     } catch (e) {
       debugPrint(e.toString());
-
       cartMap = {};
     }
 
-    //! 조건문에 넘길 product no 키 값 리스트를 선언 (기존 값이 string이어서 int로 변환)
+    // Calculate the total price
+    totalPrice = calculateTotalPrice();
+  }
 
-    cartMap.forEach(
-      (key, value) {
-        keyList.add(int.parse(key));
-      },
-    );
+  // Function to calculate the total price of items in the cart
+  double calculateTotalPrice() {
+    double total = 0;
+    cartMap.forEach((key, value) {
+      int quantity = value as int;
+      total += widget.price * quantity;
+    });
+    return total;
+  }
 
-    //! 파이어스토어에서 데이터 가져오는 Ref 변수
-
-    if (keyList.isNotEmpty) {
-      productListRef = FirebaseFirestore.instance
-          .collection("products")
-          .withConverter(
-              fromFirestore: (snapshot, _) =>
-                  Product.fromJson(snapshot.data()!),
-              toFirestore: (product, _) => product.toJson())
-          .where("productNo", whereIn: keyList);
-    }
-
-    productList = productListRef?.orderBy("productNo").snapshots();
+  void updateTotalPrice() {
+    setState(() {
+      totalPrice = calculateTotalPrice();
+    });
   }
 
   @override
@@ -78,86 +68,42 @@ class _ItemBasketPageState extends State<ItemBasketPage> {
         centerTitle: true,
       ),
       body: cartMap.isEmpty
-          ? Container()
-          : StreamBuilder(
-              stream: productList,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return ListView(
-                    children: snapshot.data!.docs.map((document) {
-                      if (cartMap[document.data().productNo.toString()] !=
-                          null) {
-                        return basketContainer(
-                            productNo: document.data().productNo ?? 0,
-                            productName: document.data().productName ?? "",
-                            productImageUrl:
-                                document.data().productImageUrl ?? "",
-                            price: document.data().price ?? 0,
-                            quantity:
-                                cartMap[document.data().productNo.toString()]);
-                      }
-
-                      return Container();
-                    }).toList(),
-                  );
-                } else if (snapshot.hasError) {
-                  return const Center(
-                    child: Text("오류가 발생 했습니다."),
-                  );
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  );
-                }
-              }),
-      bottomNavigationBar: cartMap.isEmpty
           ? const Center(
               child: Text("장바구니에 담긴 제품이 없습니다."),
             )
-          : StreamBuilder(
-              stream: productList,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  totalPrice = 0;
+          : ListView.builder(
+              itemCount: cartMap.length,
+              itemBuilder: (context, index) {
+                String productKey = cartMap.keys.toList()[index];
+                int productQuantity = cartMap[productKey] as int;
 
-                  snapshot.data?.docs.forEach((document) {
-                    if (cartMap[document.data().productNo.toString()] != null) {
-                      totalPrice +=
-                          cartMap[document.data().productNo.toString()] *
-                                  document.data().price ??
-                              0;
-                    }
-                  });
-
-                  return Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: FilledButton(
-                        onPressed: () {
-                          //! 결제시작 페이지로 이동
-
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) {
-                              return const ItemCheckoutPage();
-                            },
-                          ));
-                        },
-                        child:
-                            Text("총 ${numberFormat.format(totalPrice)}원 결제하기"),
-                      ));
-                } else if (snapshot.hasError) {
-                  return const Center(
-                    child: Text("오류가 발생 했습니다."),
-                  );
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
+                if (widget.productNo.toString() == productKey) {
+                  return basketContainer(
+                    productNo: widget.productNo,
+                    productName: widget.productName,
+                    productImageUrl: widget.productImageUrl,
+                    price: widget.price,
+                    quantity: productQuantity,
                   );
                 }
-              }),
+                return Container();
+              },
+            ),
+      bottomNavigationBar: FilledButton(
+        onPressed: () {
+          Navigator.of(context).push(MaterialPageRoute(
+            builder: (context) => ItemCheckoutPage(
+              productNos: cartMap.keys.map((e) => int.parse(e)).toList(),
+              totalPrice: totalPrice,
+              categoryId: widget.categoryId,
+              productName: widget.productName,
+              productImageUrl: widget.productImageUrl,
+              price: widget.price,
+            ),
+          ));
+        },
+        child: Text("총 ${numberFormat.format(totalPrice)}원 결제하기"),
+      ),
     );
   }
 
@@ -173,99 +119,73 @@ class _ItemBasketPageState extends State<ItemBasketPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CachedNetworkImage(
-            width: MediaQuery.of(context).size.width * 0.3,
-            height: 130,
+          Image.network(
+            productImageUrl,
+            width: 100,
+            height: 100,
             fit: BoxFit.cover,
-            imageUrl: productImageUrl,
-            placeholder: (context, url) {
-              return const Center(
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                ),
-              );
-            },
-            errorWidget: (context, url, error) {
-              return const Center(
-                child: Text("오류 발생"),
-              );
-            },
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  productName,
-                  textScaleFactor: 1.2,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
+          const SizedBox(width: 16),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                productName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text("${numberFormat.format(price)}원"),
+              Row(
+                children: [
+                  const Text("수량:"),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        if (quantity > 1) {
+                          cartMap[productNo.toString()]--;
+                          totalPrice -= price;
+                        }
+                        sharedPreferences.setString(
+                          "cartMap",
+                          json.encode(cartMap),
+                        );
+                        updateTotalPrice();
+                      });
+                    },
+                    icon: const Icon(Icons.remove),
                   ),
-                ),
-                Text("${numberFormat.format(price)}원"),
-                Row(
-                  children: [
-                    const Text("수량:"),
-                    IconButton(
-                        onPressed: () {
-                          //! 수량 줄이기 (1 초과시에만 감소시킬 수 있음)
-
-                          if (cartMap[productNo.toString()] > 1) {
-                            setState(() {
-                              //! 수량 1 차감
-
-                              cartMap[productNo.toString()]--;
-
-                              //! 디스크에 반영
-
-                              sharedPreferences.setString(
-                                  "cartMap", json.encode(cartMap));
-                            });
-                          }
-                        },
-                        icon: const Icon(
-                          Icons.remove,
-                        )),
-                    Text("$quantity"),
-                    IconButton(
-                        onPressed: () {
-                          setState(() {
-                            //! 수량 늘리기
-
-                            cartMap[productNo.toString()]++;
-
-                            //! 디스크에 반영
-
-                            sharedPreferences.setString(
-                                "cartMap", json.encode(cartMap));
-                          });
-                        },
-                        icon: const Icon(
-                          Icons.add,
-                        )),
-                    IconButton(
-                        onPressed: () {
-                          setState(() {
-                            //! 장바구니에서 해당 제품 제거
-
-                            cartMap.remove(productNo.toString());
-
-                            //! 디스크에 반영
-
-                            sharedPreferences.setString(
-                                "cartMap", json.encode(cartMap));
-                          });
-                        },
-                        icon: const Icon(
-                          Icons.delete,
-                        )),
-                  ],
-                ),
-                Text("합계: ${numberFormat.format(price * quantity)}원"),
-              ],
-            ),
+                  Text("$quantity"),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        cartMap[productNo.toString()]++;
+                        totalPrice += price;
+                        sharedPreferences.setString(
+                          "cartMap",
+                          json.encode(cartMap),
+                        );
+                        updateTotalPrice();
+                      });
+                    },
+                    icon: const Icon(Icons.add),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      setState(() {
+                        totalPrice -= price * quantity;
+                        cartMap.remove(productNo.toString());
+                        sharedPreferences.setString(
+                          "cartMap",
+                          json.encode(cartMap),
+                        );
+                        updateTotalPrice();
+                      });
+                    },
+                    icon: const Icon(Icons.delete),
+                  ),
+                ],
+              ),
+              Text("합계: ${numberFormat.format(price * quantity)}원"),
+            ],
           ),
         ],
       ),

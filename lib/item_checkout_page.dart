@@ -20,14 +20,27 @@ import 'package:tongbokapp/item_order_result_page.dart';
 
 import 'package:tongbokapp/models/order.dart';
 
-import 'package:tongbokapp/models/product.dart';
-
 import 'package:kpostal/kpostal.dart';
 
 import 'package:crypto/crypto.dart';
 
 class ItemCheckoutPage extends StatefulWidget {
-  const ItemCheckoutPage({super.key});
+  final List<int> productNos;
+  final double totalPrice;
+  final String categoryId;
+  final String productName;
+  final double price;
+  final String productImageUrl;
+
+  const ItemCheckoutPage({
+    Key? key,
+    required this.productImageUrl,
+    required this.price,
+    required this.productNos,
+    required this.totalPrice,
+    required this.categoryId,
+    required this.productName,
+  }) : super(key: key);
 
   @override
   State<ItemCheckoutPage> createState() => _ItemCheckoutPageState();
@@ -36,51 +49,24 @@ class ItemCheckoutPage extends StatefulWidget {
 class _ItemCheckoutPageState extends State<ItemCheckoutPage> {
   final database = FirebaseFirestore.instance;
 
-  Query<Product>? productListRef;
-
-  double totalPrice = 0;
-
   Map<String, dynamic> cartMap = {};
-
-  Stream<QuerySnapshot<Product>>? productList;
-
-  List<int> keyList = [];
-
-  final formKey = GlobalKey<FormState>();
-
-  //! controller 변수 추가
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
   TextEditingController buyerNameController = TextEditingController();
-
   TextEditingController buyerEmailController = TextEditingController();
-
   TextEditingController buyerPhoneController = TextEditingController();
-
   TextEditingController receiverNameController = TextEditingController();
-
   TextEditingController receiverPhoneController = TextEditingController();
-
   TextEditingController receiverZipController = TextEditingController();
-
   TextEditingController receiverAddress1Controller = TextEditingController();
-
   TextEditingController receiverAddress2Controller = TextEditingController();
-
   TextEditingController userPwdController = TextEditingController();
-
   TextEditingController userConfirmPwdController = TextEditingController();
-
   TextEditingController cardNoController = TextEditingController();
-
   TextEditingController cardAuthController = TextEditingController();
-
   TextEditingController cardExpiredDateController = TextEditingController();
-
   TextEditingController cardPwdTwoDigitsController = TextEditingController();
-
   TextEditingController depositNameController = TextEditingController();
-
-  //! 결제수단 옵션 선택 변수
 
   final List<String> paymentMethodList = [
     '결제수단선택',
@@ -94,38 +80,13 @@ class _ItemCheckoutPageState extends State<ItemCheckoutPage> {
   void initState() {
     super.initState();
 
-    //! 저장한 장바구니 리스트 가져오기
-
     try {
       cartMap =
           json.decode(sharedPreferences.getString("cartMap") ?? "{}") ?? {};
     } catch (e) {
       debugPrint(e.toString());
-
       cartMap = {};
     }
-
-    //! 조건문에 넘길 product no 키 값 리스트를 선언 (기존 값이 string이어서 int로 변환)
-
-    cartMap.forEach(
-      (key, value) {
-        keyList.add(int.parse(key));
-      },
-    );
-
-    //! 파이어스토어에서 데이터 가져오는 Ref 변수
-
-    if (keyList.isNotEmpty) {
-      productListRef = FirebaseFirestore.instance
-          .collection("products")
-          .withConverter(
-              fromFirestore: (snapshot, _) =>
-                  Product.fromJson(snapshot.data()!),
-              toFirestore: (product, _) => product.toJson())
-          .where("productNo", whereIn: keyList);
-    }
-
-    productList = productListRef?.orderBy("productNo").snapshots();
   }
 
   @override
@@ -138,45 +99,27 @@ class _ItemCheckoutPageState extends State<ItemCheckoutPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
+            Text("Total Price: ${numberFormat.format(widget.totalPrice)}원"),
+            Text("Category ID: ${widget.categoryId}"),
+            Text("Product Name: ${widget.productName}"),
             if (cartMap.isNotEmpty)
-              StreamBuilder(
-                stream: productList,
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return ListView(
-                      shrinkWrap: true,
-                      children: snapshot.data!.docs.map((document) {
-                        if (cartMap[document.data().productNo.toString()] !=
-                            null) {
-                          return checkoutContainer(
-                              productNo: document.data().productNo ?? 0,
-                              productName: document.data().productName ?? "",
-                              productImageUrl:
-                                  document.data().productImageUrl ?? "",
-                              price: document.data().price ?? 0,
-                              quantity: cartMap[
-                                  document.data().productNo.toString()]);
-                        }
-
-                        return Container();
-                      }).toList(),
-                    );
-                  } else if (snapshot.hasError) {
-                    return const Center(
-                      child: Text("오류가 발생 했습니다."),
-                    );
-                  } else {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
+              ListView(
+                shrinkWrap: true,
+                children: cartMap.keys.map((productKey) {
+                  int productNo = int.parse(productKey);
+                  if (widget.productNos.contains(productNo)) {
+                    int quantity = cartMap[productKey];
+                    return checkoutContainer(
+                      productNo: productNo,
+                      productName: widget.productName,
+                      productImageUrl: widget.productImageUrl,
+                      price: widget.price,
+                      quantity: quantity,
                     );
                   }
-                },
+                  return Container();
+                }).toList(),
               ),
-
-            //! 입력폼 필드
-
             Form(
               key: formKey,
               child: Column(
@@ -248,156 +191,74 @@ class _ItemCheckoutPageState extends State<ItemCheckoutPage> {
           ? const Center(
               child: Text("결제할 제품이 없습니다."),
             )
-          : StreamBuilder(
-              stream: productList,
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  totalPrice = 0;
-
-                  snapshot.data?.docs.forEach((document) {
-                    if (cartMap[document.data().productNo.toString()] != null) {
-                      totalPrice +=
-                          cartMap[document.data().productNo.toString()] *
-                                  document.data().price ??
-                              0;
-                    }
-                  });
-
-                  return Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: FilledButton(
-                        onPressed: () {
-                          if (formKey.currentState!.validate()) {
-                            if (selectedPaymentMethod == "결제수단선택") {
-                              showDialog(
-                                context: context,
-                                barrierDismissible: true,
-                                builder: (context) {
-                                  return BasicDialog(
-                                    content: "결제수단을 선택해 주세요.",
-                                    buttonText: "닫기",
-                                    buttonFunction: () =>
-                                        Navigator.of(context).pop(),
-                                  );
-                                },
-                              );
-
-                              return;
-                            }
-
-                            List<int> bytes =
-                                utf8.encode(userPwdController.text);
-
-                            Digest hashPwd = sha256.convert(bytes);
-
-                            String orderNo =
-                                "${DateFormat("yMdhms").format(DateTime.now())}-${DateTime.now().millisecond}";
-
-                            //! 이 부분에 파이어스토어에 접근해서 데이터 insert 작업 진행함.
-
-                            snapshot.data?.docs.forEach(
-                              (document) {
-                                ProductOrder productOrder = ProductOrder(
-                                  orderNo: orderNo,
-                                  productNo: document.data().productNo,
-                                  orderDate: DateFormat("y-M-d h:m:s")
-                                      .format(DateTime.now()),
-                                  buyerName: buyerNameController.text,
-                                  buyerEmail: buyerEmailController.text,
-                                  buyerPhone: buyerPhoneController.text,
-                                  receiverName: receiverNameController.text,
-                                  receiverPhone: receiverPhoneController.text,
-                                  receiverZip: receiverZipController.text,
-                                  receiverAddress1:
-                                      receiverAddress1Controller.text,
-                                  receiverAddress2:
-                                      receiverAddress2Controller.text,
-                                  userPwd: hashPwd.toString(),
-                                  paymentMethod: selectedPaymentMethod,
-                                  quantity: cartMap[
-                                      document.data().productNo.toString()],
-                                  unitPrice: document.data().price,
-                                  totalPrice: cartMap[document
-                                          .data()
-                                          .productNo
-                                          .toString()] *
-                                      document.data().price,
-                                  paymentStatus:
-                                      PaymentStatus.waiting.statusName,
-                                  deliveryStatus:
-                                      DeliveryStatus.waiting.statusName,
-                                );
-
-                                print(jsonEncode(productOrder));
-
-                                try {
-                                  database
-                                      .collection("orders")
-                                      .add(productOrder.toJson());
-                                } catch (e) {
-                                  showDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        content: Padding(
-                                          padding: const EdgeInsets.all(15.0),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Center(
-                                                  child: Text("오류가 발생 했습니다.")),
-                                            ],
-                                          ),
-                                        ),
-                                        actions: [
-                                          Center(
-                                            child: FilledButton(
-                                                onPressed: () =>
-                                                    Navigator.pop(context),
-                                                child: Text("확인")),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
-
-                                  //! 아래 부분이 더 이상 호출되지 않도록 return합니다.
-
-                                  return;
-                                }
-                              },
-                            );
-
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) {
-                                return ItemOrderResultPage(
-                                  paymentMethod: selectedPaymentMethod,
-                                  paymentAmount: totalPrice,
-                                  receiverName: receiverNameController.text,
-                                  receiverPhone: receiverPhoneController.text,
-                                  zip: receiverZipController.text,
-                                  address1: receiverAddress1Controller.text,
-                                  address2: receiverAddress2Controller.text,
-                                );
-                              },
-                            ));
-                          }
+          : Padding(
+              padding: const EdgeInsets.all(20),
+              child: FilledButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    if (selectedPaymentMethod == "결제수단선택") {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: true,
+                        builder: (context) {
+                          return BasicDialog(
+                            content: "결제수단을 선택해 주세요.",
+                            buttonText: "닫기",
+                            buttonFunction: () => Navigator.of(context).pop(),
+                          );
                         },
-                        child:
-                            Text("총 ${numberFormat.format(totalPrice)}원 결제하기"),
-                      ));
-                } else if (snapshot.hasError) {
-                  return const Center(
-                    child: Text("오류가 발생 했습니다."),
-                  );
-                } else {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  );
-                }
-              },
+                      );
+                      return;
+                    }
+
+                    List<int> bytes = utf8.encode(userPwdController.text);
+                    Digest hashPwd = sha256.convert(bytes);
+
+                    String orderNo =
+                        "${DateFormat("yMdhms").format(DateTime.now())}-${DateTime.now().millisecond}";
+
+                    cartMap.forEach((productKey, quantity) {
+                      ProductOrder productOrder = ProductOrder(
+                        orderNo: orderNo,
+                        productNo: int.parse(productKey),
+                        orderDate:
+                            DateFormat("y-M-d h:m:s").format(DateTime.now()),
+                        buyerName: buyerNameController.text,
+                        buyerEmail: buyerEmailController.text,
+                        buyerPhone: buyerPhoneController.text,
+                        receiverName: receiverNameController.text,
+                        receiverPhone: receiverPhoneController.text,
+                        receiverZip: receiverZipController.text,
+                        receiverAddress1: receiverAddress1Controller.text,
+                        receiverAddress2: receiverAddress2Controller.text,
+                        userPwd: hashPwd.toString(),
+                        paymentMethod: selectedPaymentMethod,
+                        quantity: quantity,
+                        unitPrice: widget.price,
+                        totalPrice: quantity * widget.price,
+                        paymentStatus: PaymentStatus.waiting.statusName,
+                        deliveryStatus: DeliveryStatus.waiting.statusName,
+                      );
+
+                      database.collection("orders").add(productOrder.toJson());
+                    });
+
+                    Navigator.of(context).push(MaterialPageRoute(
+                      builder: (context) => ItemOrderResultPage(
+                        paymentMethod: selectedPaymentMethod,
+                        paymentAmount: widget.totalPrice,
+                        receiverName: receiverNameController.text,
+                        receiverPhone: receiverPhoneController.text,
+                        zip: receiverZipController.text,
+                        address1: receiverAddress1Controller.text,
+                        address2: receiverAddress2Controller.text,
+                      ),
+                    ));
+                  }
+                },
+                child:
+                    Text("총 ${numberFormat.format(widget.totalPrice)}원 결제하기"),
+              ),
             ),
     );
   }
@@ -475,7 +336,6 @@ class _ItemCheckoutPageState extends State<ItemCheckoutPage> {
               return "비밀번호가 일치하지 않습니다.";
             }
           }
-
           return null;
         },
         controller: currentController,
@@ -513,7 +373,6 @@ class _ItemCheckoutPageState extends State<ItemCheckoutPage> {
                   builder: (context) {
                     return KpostalView(callback: (Kpostal result) {
                       receiverZipController.text = result.postCode;
-
                       receiverAddress1Controller.text = result.address;
                     });
                   },

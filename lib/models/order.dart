@@ -17,8 +17,10 @@ class ProductOrder {
   double? totalPrice;
   String? paymentStatus;
   String? deliveryStatus;
+  String? productName;
 
   ProductOrder({
+    this.productName,
     this.orderNo,
     this.productNo,
     this.orderDate,
@@ -42,6 +44,7 @@ class ProductOrder {
   ProductOrder.fromJson(Map<String, dynamic> json) {
     orderNo = json['orderNo'];
     productNo = json['productNo'];
+    productName = json['productName'];
     orderDate = json['orderDate'];
     buyerName = json['buyerName'];
     buyerEmail = json['buyerEmail'];
@@ -62,6 +65,7 @@ class ProductOrder {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {};
+    data['productName'] = productName;
     data['orderNo'] = orderNo;
     data['productNo'] = productNo;
     data['orderDate'] = orderDate;
