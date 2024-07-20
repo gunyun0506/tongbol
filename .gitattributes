@@ -1,0 +1,11 @@
+Flutter/Profile/Flutter.xcframework/ios-arm64_x86_64-simulator/Flutter.framework/Flutter filter=lfs diff=lfs merge=lfs -text
+Flutter/Release/Flutter.xcframework/ios-arm64_x86_64-simulator/Flutter.framework/Flutter filter=lfs diff=lfs merge=lfs -text
+Flutter/Release/FirebaseFirestoreInternal.xcframework/ios-arm64/dSYMs/FirebaseFirestoreInternal.framework.dSYM/Contents/Resources/DWARF/FirebaseFirestoreInternal filter=lfs diff=lfs merge=lfs -text
+Flutter/Debug/Flutter.xcframework/ios-arm64_x86_64-simulator/Flutter.framework/Flutter filter=lfs diff=lfs merge=lfs -text
+Flutter/Profile/grpc.xcframework/ios-arm64_x86_64-simulator/grpc.framework/grpc filter=lfs diff=lfs merge=lfs -text
+Flutter/Debug/grpc.xcframework/ios-arm64_x86_64-simulator/grpc.framework/grpc filter=lfs diff=lfs merge=lfs -text
+Flutter/Release/grpc.xcframework/ios-arm64_x86_64-simulator/grpc.framework/grpc filter=lfs diff=lfs merge=lfs -text
+Flutter/Debug/App.xcframework/ios-arm64/App.framework/flutter_assets/kernel_blob.bin filter=lfs diff=lfs merge=lfs -text
+Flutter/Profile/FirebaseFirestoreInternal.xcframework/ios-arm64/dSYMs/FirebaseFirestoreInternal.framework.dSYM/Contents/Resources/DWARF/FirebaseFirestoreInternal filter=lfs diff=lfs merge=lfs -text
+Flutter/Profile/grpc.xcframework/ios-arm64/dSYMs/grpc.framework.dSYM/Contents/Resources/DWARF/grpc filter=lfs diff=lfs merge=lfs -text
+Flutter/Release/grpc.xcframework/ios-arm64/dSYMs/grpc.framework.dSYM/Contents/Resources/DWARF/grpc filter=lfs diff=lfs merge=lfs -text
